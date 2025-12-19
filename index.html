@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日本語サバイバルヒントゲーム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0c;
+            --bg-secondary: #121218;
+            --bg-tertiary: #1a1a24;
+            --text-primary: #e8e8ec;
+            --text-secondary: #8a8a9a;
+            --text-muted: #5a5a6a;
+            --accent: #8b1538;
+            --accent-hover: #a91d45;
+            --accent-glow: rgba(139, 21, 56, 0.3);
+            --border: #2a2a3a;
+            --border-accent: #3a1a24;
+        }
+
+        body {
+            font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", "Segoe UI", sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* MULTILINGUAL BACKGROUND TEXT LAYER */
+        .background-text-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .background-gradient-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            background: radial-gradient(circle at center, transparent 0%, rgba(10, 10, 12, 0.2) 50%, rgba(10, 10, 12, 0.5) 100%);
+        }
+
+        .background-text-phrase {
+            position: absolute;
+            color: #9a9aa8;
+            font-size: 2.5rem;
+            font-weight: 300;
+            opacity: 0;
+            filter: blur(4.5px);
+            white-space: nowrap;
+            user-select: none;
+            font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", "Malgun Gothic", "Microsoft YaHei", "Noto Sans", sans-serif;
+            transition: opacity 0.8s ease-in-out;
+        }
+
+        .view {
+            display: none;
+            width: 100%;
+            max-width: 1200px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            position: relative;
+            z-index: 2;
+        }
+
+        .view.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 1;
+        }
+
+        /* HOME VIEW */
+        #homeView .title {
+            font-size: 4rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            letter-spacing: 0.15em;
+            text-shadow: 0 0 40px var(--accent-glow);
+        }
+
+        #homeView .subtitle {
+            font-size: 1.6rem;
+            color: var(--accent);
+            margin-bottom: 4rem;
+            font-weight: 400;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+        }
+
+        .btn {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 1.2rem 3rem;
+            font-size: 1.4rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .btn:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-large {
+            padding: 1.5rem 5rem;
+            font-size: 1.8rem;
+            letter-spacing: 0.2em;
+        }
+
+        .btn-accent {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .btn-accent:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        .btn-outline:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border-color: var(--accent);
+        }
+
+        /* CATEGORY VIEW */
+        #categoryView h2 {
+            font-size: 2rem;
+            margin-bottom: 3rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            letter-spacing: 0.2em;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .category-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            padding: 3rem 2rem;
+            font-size: 1.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            color: var(--text-primary);
+        }
+
+        .category-btn:hover {
+            border-color: var(--accent);
+            background: var(--bg-tertiary);
+            box-shadow: 0 0 30px var(--accent-glow);
+        }
+
+        .back-btn {
+            margin-top: 3rem;
+            padding: 0.8rem 2rem;
+            font-size: 1rem;
+        }
+
+        /* ITEM SELECTION VIEW */
+        #itemView h2 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        #itemView .category-label {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            margin-bottom: 3rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+
+        .item-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            justify-content: center;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .item-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            padding: 2.5rem 4rem;
+            font-size: 1.6rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            color: var(--text-primary);
+            letter-spacing: 0.15em;
+            min-width: 180px;
+        }
+
+        .item-btn:hover {
+            border-color: var(--accent);
+            background: var(--bg-tertiary);
+            box-shadow: 0 0 30px var(--accent-glow);
+        }
+
+        /* GAME VIEW */
+        #gameView {
+            width: 100%;
+        }
+
+        .game-header {
+            font-size: 1.6rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+            width: 100%;
+            letter-spacing: 0.15em;
+        }
+
+        .game-category-display {
+            font-size: 5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 2rem 0 1rem;
+            text-shadow: 0 0 40px var(--accent-glow);
+        }
+
+        .game-word-placeholder {
+            font-size: 1.4rem;
+            color: var(--accent);
+            letter-spacing: 0.3em;
+            margin-bottom: 3rem;
+            text-transform: uppercase;
+        }
+
+        .game-content {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .game-content.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .hint-area {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 3rem;
+            margin: 2rem 0;
+            width: 100%;
+            max-width: 800px;
+            min-height: 280px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+        }
+
+        .hint-item {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.8rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .hint-item.revealed {
+            display: flex;
+            opacity: 1;
+        }
+
+        .hint-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+        }
+
+        .hint-image {
+            max-width: 280px;
+            max-height: 180px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .hint-sound {
+            font-size: 4.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-shadow: 0 0 30px var(--accent-glow);
+        }
+
+        .hint-sentence {
+            font-size: 1.8rem;
+            color: var(--text-primary);
+            line-height: 1.8;
+        }
+
+        .sentence-extras {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            width: 100%;
+        }
+
+        .sentence-extras.visible {
+            display: flex;
+        }
+
+        .sentence-extras-controls {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn-small {
+            padding: 0.6rem 1.2rem;
+            font-size: 0.9rem;
+        }
+
+        .sentence-furigana {
+            display: none;
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            line-height: 2;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .sentence-furigana.revealed {
+            display: block;
+        }
+
+        .sentence-english {
+            display: none;
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            font-style: italic;
+            letter-spacing: 0.05em;
+        }
+
+        .sentence-english.revealed {
+            display: block;
+        }
+
+        .answer-reveal {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            width: 100%;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .answer-reveal.revealed {
+            display: flex;
+            opacity: 1;
+        }
+
+        .answer-kanji {
+            font-size: 4.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-shadow: 0 0 40px var(--accent-glow);
+        }
+
+        .answer-reading {
+            font-size: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .answer-english {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            letter-spacing: 0.1em;
+        }
+
+        .hint-controls {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 1.5rem 0;
+        }
+
+        .hint-btn {
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+        }
+
+        .hint-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            background: var(--bg-tertiary);
+            border-color: var(--border);
+        }
+
+        .hint-btn:disabled:hover {
+            background: var(--bg-tertiary);
+            box-shadow: none;
+        }
+
+        .game-nav {
+            margin-top: 2.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .start-btn-container {
+            margin: 2rem 0;
+        }
+
+        .placeholder-image {
+            width: 260px;
+            height: 160px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            letter-spacing: 0.1em;
+        }
+
+        .divider {
+            width: 60px;
+            height: 1px;
+            background: var(--accent);
+            margin: 1rem 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .category-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            #homeView .title {
+                font-size: 2.5rem;
+            }
+
+            #homeView .subtitle {
+                font-size: 1.1rem;
+            }
+
+            .category-btn,
+            .item-btn {
+                font-size: 1.3rem;
+                padding: 2rem 1.5rem;
+            }
+
+            .game-category-display {
+                font-size: 3rem;
+            }
+
+            .hint-sound {
+                font-size: 3.5rem;
+            }
+
+            .hint-sentence {
+                font-size: 1.4rem;
+            }
+
+            .answer-kanji {
+                font-size: 3rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .category-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hint-controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- MULTILINGUAL BACKGROUND TEXT LAYER -->
+    <div id="backgroundTextLayer" class="background-text-layer"></div>
+    <div class="background-gradient-overlay"></div>
+
+    <!-- VIEW 1: HOME SCREEN -->
+    <div id="homeView" class="view active">
+        <h1 class="title">ゲームルームへようこそ</h1>
+        <div class="divider"></div>
+        <p class="subtitle">日本語サバイバルヒントゲーム</p>
+        <button class="btn btn-large btn-accent" onclick="showView('categoryView')">ENTER</button>
+    </div>
+
+    <!-- VIEW 2: CATEGORY SELECTION -->
+    <div id="categoryView" class="view">
+        <h2>SELECT CATEGORY</h2>
+        <div id="categoryGrid" class="category-grid"></div>
+        <button class="btn btn-outline back-btn" onclick="showView('homeView')">← BACK</button>
+    </div>
+
+    <!-- VIEW 3: ITEM SELECTION -->
+    <div id="itemView" class="view">
+        <h2 id="itemCategoryTitle"></h2>
+        <p id="itemCategoryLabel" class="category-label">SELECT TARGET</p>
+        <div id="itemGrid" class="item-grid"></div>
+        <button class="btn btn-outline back-btn" onclick="showView('categoryView')">← BACK</button>
+    </div>
+
+    <!-- VIEW 4: GAME VIEW -->
+    <div id="gameView" class="view">
+        <div id="gameHeader" class="game-header"></div>
+        <div id="gameCategoryDisplay" class="game-category-display"></div>
+        <div id="gameWordPlaceholder" class="game-word-placeholder">WORD SELECTED</div>
+        
+        <div id="startBtnContainer" class="start-btn-container">
+            <button class="btn btn-large btn-accent" onclick="startGame()">START ROUND</button>
+        </div>
+
+        <div id="gameContent" class="game-content">
+            <div class="hint-area">
+                <!-- Image Hint -->
+                <div id="hintImage" class="hint-item">
+                    <span class="hint-label">IMAGE HINT</span>
+                    <div id="imageContainer"></div>
+                </div>
+
+                <!-- First Sound Hint -->
+                <div id="hintSound" class="hint-item">
+                    <span class="hint-label">FIRST SOUND</span>
+                    <span id="soundDisplay" class="hint-sound"></span>
+                </div>
+
+                <!-- Sentence Hint -->
+                <div id="hintSentence" class="hint-item">
+                    <span class="hint-label">SENTENCE HINT</span>
+                    <p id="sentenceDisplay" class="hint-sentence"></p>
+                    
+                    <!-- Sentence Extras (Furigana + English) -->
+                    <div id="sentenceExtras" class="sentence-extras">
+                        <div class="sentence-extras-controls">
+                            <button id="btnFurigana" class="btn btn-small btn-outline" onclick="revealSentenceExtra('furigana')">SHOW FURIGANA</button>
+                            <button id="btnSentenceEnglish" class="btn btn-small btn-outline" onclick="revealSentenceExtra('english')">SHOW ENGLISH</button>
+                        </div>
+                        <p id="sentenceFuriganaDisplay" class="sentence-furigana"></p>
+                        <p id="sentenceEnglishDisplay" class="sentence-english"></p>
+                    </div>
+                </div>
+
+                <!-- Answer Reveal -->
+                <div id="answerReveal" class="answer-reveal">
+                    <span class="hint-label">ANSWER</span>
+                    <span id="answerKanji" class="answer-kanji"></span>
+                    <span id="answerReading" class="answer-reading"></span>
+                    <span id="answerEnglish" class="answer-english"></span>
+                </div>
+            </div>
+
+            <div class="hint-controls">
+                <button id="btnImage" class="btn hint-btn" onclick="revealHint('image')">IMAGE HINT</button>
+                <button id="btnSound" class="btn hint-btn" onclick="revealHint('sound')">FIRST SOUND</button>
+                <button id="btnSentence" class="btn hint-btn" onclick="revealHint('sentence')">SENTENCE HINT</button>
+                <button id="btnAnswer" class="btn hint-btn btn-accent" onclick="revealAnswer()">SHOW ANSWER</button>
+            </div>
+
+            <div class="game-nav">
+                <button class="btn btn-outline" onclick="nextRound()">NEXT ROUND</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // IMAGE HINT GUIDELINES
+        // ============================================
+        // - Use abstract, environment-focused images
+        // - Avoid recognizable characters, faces, logos, or flags
+        // - Favor silhouettes, wide shots, cityscapes, and lighting
+        // - Images should feel globally familiar, not country-specific
+        // - Recognition must be subconscious, never explicit
+        //
+        // Examples:
+        //   勤怠連絡 → phone screen glow in dark room, alarm clock silhouette
+        //   夕会 → office windows at dusk, city lights at sunset
+        //   サイゼリヤ → warm restaurant interior, table with pasta silhouette
+        //   鳥貴族 → izakaya lantern glow, skewers on grill (no text)
+        //   愛ちゃん → pink/heart motifs, wealthy mansion silhouette
+        //   トトロ → rainy bus stop, forest path, large umbrella
+        //   花火 → night sky explosions, summer festival lights
+        //   モノレール → elevated track silhouette, futuristic transit
+        //   ケーブルカー → mountain slope, cable lines against sky
+        //   ハリーポッター → castle silhouette, magical lighting, wand spark
+
+        // ============================================
+        // DATA STRUCTURE
+        // ============================================
+        const gameData = {
+            "仕事系": [
+                {
+                    id: "WORD 1",
+                    kanji: "勤怠連絡",
+                    reading: "きんたいれんらく",
+                    firstSound: "き",
+                    sentenceHint: "寝坊しました…。上司にすぐ＿＿＿しないと、やばいです。",
+                    sentenceFurigana: "ねぼうしました…。じょうしにすぐ＿＿＿しないと、やばいです。",
+                    sentenceEnglish: "I overslept... I need to notify my boss right away or I'm in trouble.",
+                    englishMeaning: "attendance notification",
+                    imagePath: "images/phone_alarm_silhouette.png"
+                },
+                {
+                    id: "WORD 2",
+                    kanji: "夕会",
+                    reading: "ゆうかい",
+                    firstSound: "ゆ",
+                    sentenceHint: "「もう帰れる！」と思ったら、まだ＿＿＿がありました…。",
+                    sentenceFurigana: "「もうかえれる！」とおもったら、まだ＿＿＿がありました…。",
+                    sentenceEnglish: "Just when I thought I could go home, there was still the ___ left...",
+                    englishMeaning: "evening meeting",
+                    imagePath: "images/office_dusk_lights.png"
+                }
+            ],
+
+            "店・お店": [
+                {
+                    id: "WORD 1",
+                    kanji: "サイゼリヤ",
+                    reading: "さいぜりや",
+                    firstSound: "さ",
+                    sentenceHint: "財布がピンチの日、「ここしかない！」と思って入る店です。＿＿＿です。",
+                    sentenceFurigana: "さいふがピンチのひ、「ここしかない！」とおもってはいるみせです。＿＿＿です。",
+                    sentenceEnglish: "On days when my wallet is in trouble, this is the only place I can go. It's ___.",
+                    englishMeaning: "Saizeriya restaurant",
+                    imagePath: "images/casual_italian_interior.png"
+                },
+                {
+                    id: "WORD 2",
+                    kanji: "鳥貴族",
+                    reading: "とりきぞく",
+                    firstSound: "と",
+                    sentenceHint: "「一杯だけね」と言いながら、結局長居する店です。＿＿＿です。",
+                    sentenceFurigana: "「いっぱいだけね」といいながら、けっきょくながいするみせです。＿＿＿です。",
+                    sentenceEnglish: "A place where you say 'just one drink' but end up staying forever. It's ___.",
+                    englishMeaning: "Torikizoku izakaya",
+                    imagePath: "images/yakitori_grill_glow.png"
+                }
+            ],
+
+            "アニメキャラクター": [
+                {
+                    id: "WORD 1",
+                    kanji: "愛ちゃん",
+                    reading: "あいちゃん",
+                    firstSound: "あ",
+                    sentenceHint: "お金持ちで、しんちゃんに本気すぎる女の子です。ちょっと怖い…。＿＿＿です。",
+                    sentenceFurigana: "おかねもちで、しんちゃんにほんきすぎるおんなのこです。ちょっとこわい…。＿＿＿です。",
+                    sentenceEnglish: "A rich girl who is way too serious about Shin-chan. A bit scary... It's ___.",
+                    englishMeaning: "Ai-chan (Crayon Shin-chan)",
+                    imagePath: "images/wealthy_mansion_pink.png"
+                },
+                {
+                    id: "WORD 2",
+                    kanji: "トトロ",
+                    reading: "ととろ",
+                    firstSound: "と",
+                    sentenceHint: "雨の日に、こんな大きい生き物がいたら怖いけど、なぜか可愛い。＿＿＿です。",
+                    sentenceFurigana: "あめのひに、こんなおおきいいきものがいたらこわいけど、なぜかかわいい。＿＿＿です。",
+                    sentenceEnglish: "On a rainy day, such a big creature would be scary, but somehow it's cute. It's ___.",
+                    englishMeaning: "Totoro",
+                    imagePath: "images/rainy_bus_stop_forest.png"
+                }
+            ],
+
+            "日本の季節・行事": [
+                {
+                    id: "WORD 1",
+                    kanji: "花火",
+                    reading: "はなび",
+                    firstSound: "は",
+                    sentenceHint: "音はうるさいけど、なぜか毎年見に行きます。夏といえば＿＿＿です。",
+                    sentenceFurigana: "おとはうるさいけど、なぜかまいとしみにいきます。なつといえば＿＿＿です。",
+                    sentenceEnglish: "It's loud, but somehow I go see it every year. When you think of summer, it's ___.",
+                    englishMeaning: "fireworks",
+                    imagePath: "images/night_sky_explosions.png"
+                }
+            ],
+
+            "交通": [
+                {
+                    id: "WORD 1",
+                    kanji: "モノレール",
+                    reading: "ものれーる",
+                    firstSound: "も",
+                    sentenceHint: "「これ落ちないよね？」と、最初ちょっと不安になる乗り物です。＿＿＿です。",
+                    sentenceFurigana: "「これおちないよね？」と、さいしょちょっとふあんになるのりものです。＿＿＿です。",
+                    sentenceEnglish: "A vehicle that makes you a bit nervous at first, thinking 'This won't fall, right?' It's ___.",
+                    englishMeaning: "monorail",
+                    imagePath: "images/elevated_track_silhouette.png"
+                },
+                {
+                    id: "WORD 2",
+                    kanji: "ケーブルカー",
+                    reading: "けーぶるかー",
+                    firstSound: "け",
+                    sentenceHint: "めっちゃ遅いけど、景色はきれいな乗り物です。＿＿＿です。",
+                    sentenceFurigana: "めっちゃおそいけど、けしきはきれいなのりものです。＿＿＿です。",
+                    sentenceEnglish: "It's super slow, but the scenery is beautiful. It's ___.",
+                    englishMeaning: "cable car",
+                    imagePath: "images/mountain_cable_lines.png"
+                }
+            ],
+
+            "映画": [
+                {
+                    id: "WORD 1",
+                    kanji: "ハリーポッター",
+                    reading: "はりーぽったー",
+                    firstSound: "は",
+                    sentenceHint: "魔法学校に行きたかった人、たぶん多いですよね。映画の名前は＿＿＿です。",
+                    sentenceFurigana: "まほうがっこうにいきたかったひと、たぶんおおいですよね。えいがのなまえは＿＿＿です。",
+                    sentenceEnglish: "Many people probably wanted to go to a magic school, right? The movie is ___.",
+                    englishMeaning: "Harry Potter",
+                    imagePath: "images/castle_magical_silhouette.png"
+                }
+            ]
+        };
+
+        // ============================================
+        // APP STATE
+        // ============================================
+        let currentCategory = null;
+        let currentWord = null;
+        let hintsRevealed = {
+            image: false,
+            sound: false,
+            sentence: false
+        };
+        let sentenceExtrasRevealed = {
+            furigana: false,
+            english: false
+        };
+
+        // ============================================
+        // VIEW MANAGEMENT
+        // ============================================
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(view => {
+                view.classList.remove('active');
+            });
+            
+            setTimeout(() => {
+                document.getElementById(viewId).classList.add('active');
+            }, 50);
+
+            if (viewId === 'categoryView') {
+                renderCategories();
+            }
+        }
+
+        // ============================================
+        // CATEGORY RENDERING
+        // ============================================
+        function getCategories() {
+            return Object.keys(gameData);
+        }
+
+        function getItemsByCategory(category) {
+            return gameData[category] || [];
+        }
+
+        function renderCategories() {
+            const grid = document.getElementById('categoryGrid');
+            const categories = getCategories();
+            
+            grid.innerHTML = categories.map(cat => 
+                `<button class="category-btn" onclick="selectCategory('${cat}')">${cat}</button>`
+            ).join('');
+        }
+
+        function selectCategory(category) {
+            currentCategory = category;
+            const items = getItemsByCategory(category);
+            
+            if (items.length === 1) {
+                // If only one word, go directly to Game View
+                selectWord(items[0], category);
+            } else {
+                // Multiple words, go to Item Selection
+                renderItems(category, items);
+                showView('itemView');
+            }
+        }
+
+        // ============================================
+        // ITEM RENDERING
+        // ============================================
+        function renderItems(category, items) {
+            document.getElementById('itemCategoryTitle').textContent = category;
+            const grid = document.getElementById('itemGrid');
+            
+            // Create placeholder buttons (WORD 1, WORD 2, WORD 3)
+            grid.innerHTML = items.map(item => 
+                `<button class="item-btn" onclick="selectWordById('${category}', '${item.id}')">${item.id}</button>`
+            ).join('');
+        }
+
+        function selectWordById(category, id) {
+            const items = gameData[category] || [];
+            const word = items.find(w => w.id === id);
+            if (word) {
+                selectWord(word, category);
+            }
+        }
+
+        function selectWord(word, category) {
+            currentWord = { ...word, category: category };
+            initializeGameView();
+            showView('gameView');
+        }
+
+        // ============================================
+        // GAME VIEW
+        // ============================================
+        function initializeGameView() {
+            // Reset state
+            hintsRevealed = { image: false, sound: false, sentence: false };
+            sentenceExtrasRevealed = { furigana: false, english: false };
+            
+            // Set category display
+            document.getElementById('gameHeader').textContent = '';
+            document.getElementById('gameHeader').style.display = 'none';
+            document.getElementById('gameCategoryDisplay').textContent = currentCategory;
+            document.getElementById('gameCategoryDisplay').style.display = 'block';
+            document.getElementById('gameWordPlaceholder').style.display = 'block';
+            
+            // Hide game content, show start button
+            document.getElementById('startBtnContainer').style.display = 'block';
+            document.getElementById('gameContent').classList.remove('active');
+            
+            // Reset hints
+            document.getElementById('hintImage').classList.remove('revealed');
+            document.getElementById('hintSound').classList.remove('revealed');
+            document.getElementById('hintSentence').classList.remove('revealed');
+            document.getElementById('answerReveal').classList.remove('revealed');
+            
+            // Reset sentence extras
+            document.getElementById('sentenceExtras').classList.remove('visible');
+            document.getElementById('sentenceFuriganaDisplay').classList.remove('revealed');
+            document.getElementById('sentenceEnglishDisplay').classList.remove('revealed');
+            document.getElementById('btnFurigana').disabled = false;
+            document.getElementById('btnFurigana').style.display = 'inline-block';
+            document.getElementById('btnSentenceEnglish').disabled = false;
+            document.getElementById('btnSentenceEnglish').style.display = 'inline-block';
+            
+            // Enable buttons
+            document.getElementById('btnImage').disabled = false;
+            document.getElementById('btnSound').disabled = false;
+            document.getElementById('btnSentence').disabled = false;
+        }
+
+        function startGame() {
+            // Move category to header
+            document.getElementById('gameHeader').textContent = currentCategory;
+            document.getElementById('gameHeader').style.display = 'block';
+            document.getElementById('gameCategoryDisplay').style.display = 'none';
+            document.getElementById('gameWordPlaceholder').style.display = 'none';
+            
+            // Hide start button, show game content
+            document.getElementById('startBtnContainer').style.display = 'none';
+            document.getElementById('gameContent').classList.add('active');
+            
+            // Prepare data
+            document.getElementById('soundDisplay').textContent = currentWord.firstSound;
+            document.getElementById('sentenceDisplay').textContent = currentWord.sentenceHint;
+            document.getElementById('answerKanji').textContent = currentWord.kanji;
+            document.getElementById('answerReading').textContent = currentWord.reading;
+            document.getElementById('answerEnglish').textContent = currentWord.englishMeaning;
+            
+            // Prepare sentence extras (furigana and English)
+            const hasFurigana = currentWord.sentenceFurigana && currentWord.sentenceFurigana.trim() !== '';
+            const hasEnglish = currentWord.sentenceEnglish && currentWord.sentenceEnglish.trim() !== '';
+            
+            document.getElementById('sentenceFuriganaDisplay').textContent = hasFurigana ? currentWord.sentenceFurigana : '';
+            document.getElementById('sentenceEnglishDisplay').textContent = hasEnglish ? currentWord.sentenceEnglish : '';
+            
+            // Hide buttons if data is not available
+            document.getElementById('btnFurigana').style.display = hasFurigana ? 'inline-block' : 'none';
+            document.getElementById('btnSentenceEnglish').style.display = hasEnglish ? 'inline-block' : 'none';
+            
+            // Prepare image
+            // Note: Use abstract, environment-focused images
+            // Avoid characters, faces, logos, flags
+            // Favor silhouettes, wide shots, cityscapes, lighting
+            const imageContainer = document.getElementById('imageContainer');
+            if (currentWord.imagePath && currentWord.imagePath.trim() !== '') {
+                imageContainer.innerHTML = `<img src="${currentWord.imagePath}" alt="HINT" class="hint-image" onerror="this.parentElement.innerHTML='<div class=\\'placeholder-image\\'>IMAGE UNAVAILABLE</div>'">`;
+            } else {
+                imageContainer.innerHTML = `<div class="placeholder-image">ABSTRACT HINT IMAGE</div>`;
+            }
+        }
+
+        function revealHint(type) {
+            if (type === 'image' && !hintsRevealed.image) {
+                document.getElementById('hintImage').classList.add('revealed');
+                document.getElementById('btnImage').disabled = true;
+                hintsRevealed.image = true;
+            } else if (type === 'sound' && !hintsRevealed.sound) {
+                document.getElementById('hintSound').classList.add('revealed');
+                document.getElementById('btnSound').disabled = true;
+                hintsRevealed.sound = true;
+            } else if (type === 'sentence' && !hintsRevealed.sentence) {
+                document.getElementById('hintSentence').classList.add('revealed');
+                document.getElementById('btnSentence').disabled = true;
+                hintsRevealed.sentence = true;
+                
+                // Show sentence extras controls (only if at least one extra is available)
+                const hasFurigana = currentWord.sentenceFurigana && currentWord.sentenceFurigana.trim() !== '';
+                const hasEnglish = currentWord.sentenceEnglish && currentWord.sentenceEnglish.trim() !== '';
+                if (hasFurigana || hasEnglish) {
+                    document.getElementById('sentenceExtras').classList.add('visible');
+                }
+            }
+        }
+
+        function revealSentenceExtra(type) {
+            if (type === 'furigana' && !sentenceExtrasRevealed.furigana) {
+                document.getElementById('sentenceFuriganaDisplay').classList.add('revealed');
+                document.getElementById('btnFurigana').disabled = true;
+                sentenceExtrasRevealed.furigana = true;
+            } else if (type === 'english' && !sentenceExtrasRevealed.english) {
+                document.getElementById('sentenceEnglishDisplay').classList.add('revealed');
+                document.getElementById('btnSentenceEnglish').disabled = true;
+                sentenceExtrasRevealed.english = true;
+            }
+        }
+
+        function revealAnswer() {
+            document.getElementById('answerReveal').classList.add('revealed');
+        }
+
+        function nextRound() {
+            currentWord = null;
+            showView('categoryView');
+        }
+
+        // ============================================
+        // MULTILINGUAL BACKGROUND TEXT LAYER
+        // ============================================
+        const backgroundPhrases = [
+            // Japanese
+            "これじゃない…",
+            "なんだっけ…",
+            "違うな…",
+            "待って…",
+            "そうかも…",
+            "わからない…",
+            // Korean
+            "아닌데…",
+            "뭐였지…",
+            "잠깐…",
+            "아마도…",
+            "모르겠어…",
+            "그런가…",
+            // Chinese
+            "不是这个…",
+            "等一下…",
+            "等等…",
+            "也许…",
+            "不知道…",
+            "可能…",
+            // Hindi
+            "शायद नहीं…",
+            "याद नहीं…",
+            "रुको…",
+            "शायद…",
+            "पता नहीं…",
+            "हो सकता है…",
+            // English
+            "maybe…",
+            "wait…",
+            "not sure…",
+            "perhaps…",
+            "hmm…"
+        ];
+
+        function initializeBackgroundTextLayer() {
+            const layer = document.getElementById('backgroundTextLayer');
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            // Generate 25-30 phrases with random positions
+            const numPhrases = 28;
+            
+            for (let i = 0; i < numPhrases; i++) {
+                const phrase = backgroundPhrases[Math.floor(Math.random() * backgroundPhrases.length)];
+                const phraseElement = document.createElement('div');
+                phraseElement.className = 'background-text-phrase';
+                phraseElement.textContent = phrase;
+                
+                // Random position (allow negative values to partially cut off)
+                const randomX = Math.random() * (viewportWidth + 400) - 200;
+                const randomY = Math.random() * (viewportHeight + 400) - 200;
+                
+                // Random rotation (-20deg to +20deg)
+                const randomRotation = (Math.random() * 40) - 20;
+                
+                // Random scale (0.8x to 1.4x)
+                const randomScale = 0.8 + (Math.random() * 0.6);
+                
+                phraseElement.style.left = randomX + 'px';
+                phraseElement.style.top = randomY + 'px';
+                phraseElement.style.transform = `rotate(${randomRotation}deg) scale(${randomScale})`;
+                
+                layer.appendChild(phraseElement);
+                
+                // Calculate visibility duration based on text length
+                const textLength = phrase.length;
+                let visibleDuration;
+                if (textLength <= 6) {
+                    visibleDuration = 2000; // 2 seconds
+                } else if (textLength <= 10) {
+                    visibleDuration = 2500; // 2.5 seconds
+                } else {
+                    visibleDuration = 3000; // 3 seconds
+                }
+                
+                // Fade in/out cycle duration
+                const fadeInDuration = 800;
+                const fadeOutDuration = 800;
+                const totalCycleDuration = fadeInDuration + visibleDuration + fadeOutDuration;
+                
+                // Random initial delay (0 to 3 seconds) so phrases don't sync
+                const initialDelay = Math.random() * 3000;
+                
+                // Start the fade cycle
+                setTimeout(() => {
+                    function fadeCycle() {
+                        // Fade in
+                        phraseElement.style.opacity = '0.20';
+                        
+                        // Stay visible
+                        setTimeout(() => {
+                            // Fade out
+                            phraseElement.style.opacity = '0';
+                            
+                            // Restart cycle after fade out completes
+                            setTimeout(() => {
+                                fadeCycle();
+                            }, fadeOutDuration);
+                        }, visibleDuration);
+                    }
+                    
+                    fadeCycle();
+                }, initialDelay);
+            }
+        }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeBackgroundTextLayer();
+            renderCategories();
+        });
+    </script>
+</body>
+</html>
